@@ -1,0 +1,19 @@
+:component BasicFML
+    (
+        div
+        -> h1
+            :> "Hello, world!"
+    )
+
+:component BasicFML
+    (
+        div (
+            h1 (
+                "Hello, world"
+            )
+            h2 (
+                h3 ()
+                h4 ()
+            )
+        )
+    )
