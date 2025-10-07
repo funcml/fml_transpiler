@@ -1,6 +1,7 @@
 # FunML - A (Fun)ctional Markup Language!
 
 <img src="/assets/images/funml.png" alt="funml" width="200"/>
+
 ## Project Overview
 
 **FunML (Functional Markup Language)** is an innovative markup language designed to bring the power and expressiveness of functional programming concepts to document authoring and data representation. FunML enables users to write concise, readable, and highly composable markup that can be transformed and processed with functional paradigms.
