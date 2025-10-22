@@ -1,0 +1,12 @@
+-- A component is declared like this
+Counter a b c = (
+    count <- 0 -- a signal is bound as a state like this
+    input <- ""
+
+    div 
+    .flex .flex-col (
+        form (
+            input type="text" <- input
+        )
+    )
+)

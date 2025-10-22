@@ -1,0 +1,8 @@
+:component BasicFML
+    (
+        div class="flex items-center justify-center w-full" (
+            h1 (
+                ["TODO LIST!"]
+            )
+        )
+    )

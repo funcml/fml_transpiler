@@ -23,10 +23,10 @@ name:               fml
 version:            0.1.0.0
 
 -- A short (one-line) description of the package.
--- synopsis:
+synopsis:           A functional markup language.
 
 -- A longer description of the package.
--- description:
+description:        FML is a functional markup language that transpiles to HTML, CSS, and JavaScript.
 
 -- The license under which the package is released.
 license:            BSD-3-Clause
@@ -62,17 +62,52 @@ executable fml
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    -- other-modules:
+    other-modules:
+        FML.AST
+        FML.Lib.Parser
+        FML.Parser
+        FML.Parser.Component
+        FML.Parser.Utils
+        FML.Transpiler
+        FML.Grammar
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.18.3.0
+    build-depends:    base >=4.18 && < 5, text
 
     -- Directories containing source files.
-    hs-source-dirs:   app
+    hs-source-dirs:   app, src
 
     -- Base language which the package is written in.
     default-language: Haskell2010
+
+test-suite fml-test
+    -- Import common warning flags.
+    import:           warnings
+
+    -- Base language which the package is written in.
+    default-language: Haskell2010
+
+    -- Modules included in this executable, other than Main.
+    other-modules:
+        FML.Test
+
+    -- LANGUAGE extensions used by modules in this package.
+    -- other-extensions:
+
+    -- Other library packages from which modules are imported.
+    build-depends:
+        base >=4.18 && <5,
+        fml
+
+    -- Directories containing source files.
+    hs-source-dirs:   test
+
+    -- The entrypoint to the test suite.
+    main-is:          Main.hs
+
+    -- Test suite type, exitcode-stdio-1.0 is desirable to use with cabal.
+    type:             exitcode-stdio-1.0
     

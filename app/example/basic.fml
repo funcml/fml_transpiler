@@ -1,19 +1,16 @@
-:component BasicFML
+:component BasicFML (
+    :state count = 0
     (
-        div
-        -> h1
-            :> "Hello, world!"
-    )
-
-:component BasicFML
-    (
-        div (
+        div class="flex items-center justify-center w-full" (
             h1 (
-                "Hello, world"
+                ["Counter App"]
             )
-            h2 (
-                h3 ()
-                h4 ()
+            button @click . set(count, count+1) (
+                ["Increment"]
+            )
+            p (
+                [count]
             )
         )
     )
+)
