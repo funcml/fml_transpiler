@@ -6,56 +6,41 @@
 module Main where
 
 import FML.AST (fml)
-import FML.Grammar (printParseError)
 import FML.Parser.Utils (run)
 import FML.Transpiler (transpile)
-import Foreign (Ptr)
-import Foreign.C.String (CString, newCString, peekCString)
-import Foreign.Marshal.Alloc (mallocBytes)
 import System.Environment (getArgs)
-
-compileFML :: CString -> IO CString
-compileFML cInput = do
-  input <- peekCString cInput
-  let output = compile input
-  newCString output
-
-foreign export ccall "compileFMLtoJS" compileFML :: CString -> IO CString
+import System.Exit (exitFailure, exitSuccess)
+import System.IO (hPutStrLn, stderr)
 
 compile :: String -> String
 compile input = case run fml input of
   Left err -> "Parse error: " ++ show err
   Right ast -> transpile ast
 
-foreign export ccall "hsMalloc" hs_malloc :: Int -> IO (Ptr ())
-
-hs_malloc :: Int -> IO (Ptr ())
-hs_malloc = mallocBytes
+printHelp :: IO ()
+printHelp = do
+  putStrLn "fmlc — FML Compiler"
+  putStrLn ""
+  putStrLn "Usage:"
+  putStrLn "  fmlc -c <source>     Compile inline FML source to JavaScript"
+  putStrLn "  fmlc --help          Show this help message"
+  putStrLn ""
+  putStrLn "Examples:"
+  putStrLn "  fmlc -c \"div(class='greet') 'Hello world'\""
+  putStrLn ""
+  putStrLn "Notes:"
+  putStrLn "  The compiler reads your FML markup and outputs JavaScript that directly injects components into the DOM."
 
 main :: IO ()
-main = return ()
-
--- main = do
---   args <- getArgs
---   case args of
---     [fileName] -> do
---       input <- readFile fileName
---       putStrLn input
---       -- putStrLn $ compile input
---       case run fml input of
---         Left err -> putStrLn $ "Parse error: " ++ show err
---         Right ast -> putStrLn $ "\nParsed AST:\n" ++ show ast
---     _ -> do
---       let testInput = "Counter => (div a=\"1\" b=\"2\" $ h1 $ \"lorem ipsum\" )"
---       putStrLn "Testing FML parser with input:\n"
---       putStrLn testInput
---       putStrLn ""
-
---       case run fml testInput of
---         Left err -> putStrLn $ printParseError err testInput
---         Right ast -> putStrLn $ "\nParsed AST:\n" ++ show ast
-
---       putStrLn "\nTranspiled output:\n"
---       case run fml testInput of
---         Left err -> putStrLn $ "Parse error: " ++ show err
---         Right ast -> putStrLn $ transpile ast
+main = do
+  args <- getArgs
+  case args of
+    ("-c" : src : _) -> do
+      let output = compile src
+      putStrLn output
+    ("--help" : _) -> do
+      printHelp
+      exitSuccess
+    _ -> do
+      hPutStrLn stderr "Unknown command: use --help for more info"
+      exitFailure

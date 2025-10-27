@@ -2,7 +2,7 @@
 
 module FML.Lib.Parser where
 
-import FML.Grammar
+import FML.Grammar (ParseError, Position)
 
 newtype Parser a = Parser {runParser :: (String, Position) -> (String, Position, Either ParseError a)}
   deriving (Functor)
