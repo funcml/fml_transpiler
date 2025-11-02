@@ -2,31 +2,64 @@ module FML.Parser.Component where
 
 import FML.Grammar (Attribute (Attribute), FML (FMLComponent), FMLElement (FMLElement, FMLLiteral))
 import FML.Lib.Parser (Parser)
-import FML.Parser.Utils (char, choice, identifier, lparen, operator, rparen, satisfyCond, string, whitespaces, zeroOrMore)
+import FML.Parser.Utils (char, choice, identifier, lparen, operator, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<|>))
 
 component :: Parser FML
 component = do
   name <- identifier
   operator "=>"
   lparen
-  body <- element
+  body <- choice [element, childfreeElement]
   rparen
   return $ FMLComponent name body
+
+childfreeElement :: Parser FMLElement
+childfreeElement = do
+  tag <- identifier
+  attributes <- zeroOrMore $ choice [propAttribute, idAttribute, classAttribute]
+  whitespaces
+  return $ FMLElement tag attributes []
+
+childrenInParens :: Parser [FMLElement]
+childrenInParens = do
+  lparen
+  whitespaces
+  children <-
+    ( do
+        c <- childElement
+        cs <- zeroOrMore (whitespaces *> char ',' *> whitespaces *> childElement)
+        return (c : cs)
+      )
+      <|> return []
+  whitespaces
+  rparen
+  return children
+
+inlineCompositionAsList :: Parser [FMLElement]
+inlineCompositionAsList = do
+  el <- inlineComposition
+  return [el]
+
+childfreeElementAsList :: Parser [FMLElement]
+childfreeElementAsList = do
+  el <- childfreeElement
+  return [el]
 
 element :: Parser FMLElement
 element = do
   tag <- identifier
   whitespaces
   attributes <- zeroOrMore $ choice [propAttribute, idAttribute, classAttribute]
-  children <- zeroOrMore $ choice [inlineComposition, composition]
+  children <-
+    concat
+      <$> zeroOrMore
+        ( choice
+            [ childrenInParens,
+              inlineCompositionAsList,
+              childfreeElementAsList
+            ]
+        )
   return $ FMLElement tag attributes children
-
-composition :: Parser FMLElement
-composition = do
-  lparen
-  child <- childElement
-  rparen
-  return child
 
 propAttribute :: Parser Attribute
 propAttribute = do
@@ -55,7 +88,7 @@ inlineComposition = do
   childElement
 
 childElement :: Parser FMLElement
-childElement = choice [element, literal]
+childElement = choice [element, literal, childfreeElement]
 
 literal :: Parser FMLElement
 literal = do

@@ -1,11 +1,5 @@
 #!/bin/sh
 
-cabal build --with-compiler=wasm32-wasi-ghc --with-ghc-pkg=/home/jdk/.ghc-wasm/wasm32-wasi-ghc/bin/wasm32-wasi-ghc-pkg
+cabal build
 
-WASM_FILE=$(find dist-newstyle -name "fml.wasm")
-
-if [ -f "$WASM_FILE" ]; then
-  wasmtime run $WASM_FILE
-else
-  echo "WASM file not found!"
-fi
+./dist-newstyle/build/x86_64-linux/ghc-9.6.7/fml-0.1.0.0/x/fml/build/fml/fml --test

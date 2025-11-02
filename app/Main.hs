@@ -1,4 +1,3 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use camelCase" #-}
@@ -6,6 +5,7 @@
 module Main where
 
 import FML.AST (fml)
+import FML.Grammar (printParseError)
 import FML.Parser.Utils (run)
 import FML.Transpiler (transpile)
 import System.Environment (getArgs)
@@ -17,12 +17,42 @@ compile input = case run fml input of
   Left err -> "Parse error: " ++ show err
   Right ast -> transpile ast
 
+runTest :: (String, String) -> IO ()
+runTest (name, input) = do
+  putStrLn $ "--- Testing: " ++ name ++ " ---"
+  putStrLn $ "Input: " ++ input
+  case run fml input of
+    Left err -> putStrLn $ "Parse error: " ++ printParseError err input
+    Right ast -> do
+      putStrLn $ "AST: " ++ show ast
+      putStrLn $ "Output: " ++ transpile ast
+  putStrLn ""
+
+testTranspile :: IO ()
+testTranspile = do
+  putStrLn "--- Running tests ---"
+  let tests =
+        [ ("Component with a child-free element", "MyComponent => (p)"),
+          ("Component with childfree children", "MyComponent => (p, span)"),
+          ("Component with list of children", "MyComponent => (ul (li, li, li))"),
+          ("Component with inline child", "MyComponent => (p $ span $ \"hello\")"),
+          ("Mixed children", "MyComponent => (div (p, span) $ h1 $ \"title\" img)"),
+          ("Empty parens for children", "MyComponent => (div ())"),
+          ("Nested", "MyComponent => (div (p (span \"text\")))"),
+          ("Single child in parens", "MyComponent => (p (span))"),
+          ("Tricky case with child and sibling", "MyComponent => (div (p) span)"),
+          ("Original test case", "Component => (ul (li (a href=\"/1\" $ \"Link 1\"), li (a href=\"/1\" $ \"Link 1\"), li))")
+        ]
+  mapM_ runTest tests
+  putStrLn "--- Tests finished ---"
+
 printHelp :: IO ()
 printHelp = do
   putStrLn "fmlc — FML Compiler"
   putStrLn ""
   putStrLn "Usage:"
   putStrLn "  fmlc -c <source>     Compile inline FML source to JavaScript"
+
   putStrLn "  fmlc --help          Show this help message"
   putStrLn ""
   putStrLn "Examples:"
@@ -40,6 +70,9 @@ main = do
       putStrLn output
     ("--help" : _) -> do
       printHelp
+      exitSuccess
+    ("--test" : _) -> do
+      testTranspile
       exitSuccess
     _ -> do
       hPutStrLn stderr "Unknown command: use --help for more info"

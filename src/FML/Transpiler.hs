@@ -13,13 +13,13 @@ transpile components = unlines $ map transpileComponent components
 
 transpileComponent :: FML -> String
 transpileComponent (FMLComponent name body) =
-  "export function " ++ name ++ "() {\n  return " ++ transpileElement body ++ ";\n}"
+  "export default function " ++ name ++ "() {\n  return " ++ transpileElement body ++ ";\n}"
 
 transpileElement :: FMLElement -> String
 transpileElement (FMLLiteral txt) =
   show txt
 transpileElement (FMLElement tag attrs children) =
-  "f(" ++ show tag ++ ", " ++ transpileAttributes attrs ++ transpileChildren children ++ ")"
+  "f(" ++ show tag ++ "," ++ transpileAttributes attrs ++ transpileChildren children ++ ")"
 
 transpileAttributes :: [Attribute] -> String
 transpileAttributes [] = "{}"
@@ -36,7 +36,7 @@ transpileAttr (Attribute key val)
 transpileChildren :: [FMLElement] -> String
 transpileChildren [] = ""
 transpileChildren xs =
-  ", " ++ joinWithComma (map transpileElement xs)
+  "," ++ joinWithComma (map transpileElement xs)
 
 joinWithComma :: [String] -> String
 joinWithComma = foldr1 (\a b -> a ++ ", " ++ b)
