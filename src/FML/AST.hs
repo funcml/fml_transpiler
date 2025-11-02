@@ -5,10 +5,8 @@ module FML.AST where
 import FML.Grammar (FML)
 import FML.Lib.Parser (Parser)
 import FML.Parser.Component (component)
-import FML.Parser.Utils (choice, zeroOrMore)
-
-components :: Parser [FML]
-components = zeroOrMore component
+import FML.Parser.Script (script)
+import FML.Parser.Utils (choice, zeroOrMore, try)
 
 fml :: Parser [FML]
-fml = choice [components]
+fml = zeroOrMore (choice [try script, try component])

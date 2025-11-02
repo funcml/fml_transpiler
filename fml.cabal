@@ -60,6 +60,7 @@ executable fml
     FML.Parser.Component
     FML.Parser.Utils
     FML.Transpiler
+    FML.Parser.Script
 
   -- .hs or .lhs file containing the Main module.
   main-is: Main.hs

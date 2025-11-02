@@ -18,8 +18,9 @@ data FMLExpr
     SignalDeclaration String String String
   | AsyncSignalDeclaration String String String
   | StoreDeclaration String String String
+  deriving (Show)
 
-data ScriptExpr = JSExpr String | FMLExpr deriving (Show)
+data ScriptExpr = JSExpr String | FMLDeclaration FMLExpr deriving (Show)
 
 data Prop = Prop String String deriving (Show)
 

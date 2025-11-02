@@ -32,7 +32,8 @@ testTranspile :: IO ()
 testTranspile = do
   putStrLn "--- Running tests ---"
   let tests =
-        [ ("Component with expression", "MyComponent => (div([1 + 1]))"),
+        [ ("Script with signal declaration", "script ( ~ count: number = new Date() )"),
+          ("Component with expression", "MyComponent => (div([1 + 1]))"),
           ("Component with props", "MyComponent (name: string, age: number) => (div)"),
           ("Component with a child-free element", "MyComponent => (p)"),
           ("Component with childfree children", "MyComponent => (p, span)"),

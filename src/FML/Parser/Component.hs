@@ -30,7 +30,8 @@ mergeAttributes attrs =
 
 trim :: String -> String
 trim = f . f
-   where f = reverse . dropWhile isSpace
+  where
+    f = reverse . dropWhile isSpace
 
 -- A parser for a single prop
 prop :: Parser Prop
@@ -47,14 +48,14 @@ prop = do
 -- A parser for a list of props in parentheses
 props :: Parser [Prop]
 props =
-  lparen *>
-  ( do
-      p <- prop
-      ps <- zeroOrMore (whitespaces *> char ',' *> whitespaces *> prop)
-      return (p : ps)
-      <|> return []
-  )
-  <* rparen
+  lparen
+    *> ( do
+           p <- prop
+           ps <- zeroOrMore (whitespaces *> char ',' *> whitespaces *> prop)
+           return (p : ps)
+           <|> return []
+       )
+    <* rparen
 
 component :: Parser FML
 component =
@@ -183,12 +184,12 @@ inlineComposition =
 
 expression :: Parser FMLElement
 expression = do
-    _ <- char '['
-    whitespaces
-    expr <- zeroOrMore (satisfyCond "a js expression" (/= ']'))
-    whitespaces
-    _ <- char ']'
-    return $ FMLExpression expr
+  _ <- char '['
+  whitespaces
+  expr <- zeroOrMore (satisfyCond "a js expression" (/= ']'))
+  whitespaces
+  _ <- char ']'
+  return $ FMLExpression expr
 
 childElement :: Parser FMLElement
 childElement = choice [element, literal, expression, childfreeElement] <?> "a child element (e.g. another element, or a string literal)"

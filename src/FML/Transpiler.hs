@@ -4,9 +4,11 @@ module FML.Transpiler where
 
 import FML.Grammar
   ( Attribute (..),
-    FML (FMLComponent),
+    FML (FMLComponent, FMLScript),
     FMLElement (..),
+    FMLExpr (..),
     Prop (..),
+    ScriptExpr (..),
   )
 
 transpile :: [FML] -> String
@@ -15,6 +17,14 @@ transpile components = unlines $ map transpileComponent components
 transpileComponent :: FML -> String
 transpileComponent (FMLComponent name props body) =
   "export default function " ++ name ++ "(" ++ transpileProps props ++ ") {\n  return " ++ transpileElement body ++ ";\n}"
+transpileComponent (FMLScript scriptExprs) =
+  "// Script content\n" ++ unlines (map transpileScriptExpr scriptExprs)
+
+transpileScriptExpr :: ScriptExpr -> String
+transpileScriptExpr (FMLDeclaration (SignalDeclaration name typeStr value)) =
+  "let [" ++ name ++ ", set" ++ name ++ "] = " ++ "createSignal(" ++ value ++ ");"
+transpileScriptExpr (JSExpr s) = s
+transpileScriptExpr _ = ""
 
 transpileProps :: [Prop] -> String
 transpileProps [] = ""

@@ -12,6 +12,7 @@ module FML.Parser.Utils where
 
 import FML.Grammar
 import FML.Lib.Parser
+import Data.Char (isDigit)
 
 try :: Parser a -> Parser a
 try p = Parser $ \(s, pos) ->
@@ -77,8 +78,7 @@ eof = Parser $ \case
   (c : cs, pos) ->
     ( c : cs,
       pos,
-      Left $
-        ParseError
+      Left $ ParseError
           ("expected end of input, but found '" ++ [c] ++ "'")
           (line pos)
           (column pos)
@@ -98,8 +98,7 @@ satisfyCond description predicate = Parser $ \(s, pos) ->
     [] ->
       ( [],
         pos,
-        Left $
-          ParseError
+        Left $ ParseError
             ("unexpected end of input, expected " ++ description)
             (line pos)
             (column pos)
@@ -109,8 +108,7 @@ satisfyCond description predicate = Parser $ \(s, pos) ->
       | otherwise ->
           ( x : xs,
             pos,
-            Left $
-              ParseError
+            Left $ ParseError
                 ("expected " ++ description ++ ", found '" ++ [x] ++ "'")
                 (line pos)
                 (column pos)
@@ -155,8 +153,11 @@ isAlphaNum c = isAlpha c || (c >= '0' && c <= '9')
 identifier :: Parser String
 identifier = do
   firstChar <- satisfyCond "letter or '_' as the start of an identifier" (\c -> isAlpha c || c == '_')
-  rest <- zeroOrMore (satisfyCond "alphanumeric or '_'" (\c -> isAlphaNum c || c == '_'))
+  rest <- zeroOrMore (satisfyCond "alphanumeric or '_')" (\c -> isAlphaNum c || c == '_'))
   return (firstChar : rest)
+
+number :: Parser String
+number = oneOrMore (satisfyCond "a digit" isDigit)
 
 string :: Parser String
 string = do
