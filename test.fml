@@ -1,7 +1,0 @@
-Component => (
- ul (
-   li (a href="/1" $ "Link 1"),
-   li,
-   li
- )
-)

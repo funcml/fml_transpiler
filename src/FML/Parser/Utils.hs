@@ -13,10 +13,6 @@ module FML.Parser.Utils where
 import FML.Grammar
 import FML.Lib.Parser
 
-------------------------------------------------------------
--- BASIC PARSER INFRASTRUCTURE
-------------------------------------------------------------
-
 try :: Parser a -> Parser a
 try p = Parser $ \(s, pos) ->
   case runParser p (s, pos) of
@@ -36,6 +32,15 @@ choice [] = Parser $ \(s, pos) ->
   (s, pos, Left $ ParseError "no parsers provided to choice" (line pos) (column pos))
 choice [p] = p
 choice (p : ps) = p <|> choice ps
+
+(<?>) :: Parser a -> String -> Parser a
+p <?> msg = Parser $ \(s, pos) ->
+  case runParser p (s, pos) of
+    (s', pos', Left err)
+      | s' == s -> (s, pos, Left $ ParseError msg (line pos) (column pos))
+    res -> res
+
+infixl 1 <?>
 
 run :: Parser a -> String -> Either ParseError a
 run p s =
@@ -79,10 +84,6 @@ eof = Parser $ \case
           (column pos)
     )
 
-------------------------------------------------------------
--- REPETITION HELPERS
-------------------------------------------------------------
-
 zeroOrMore, oneOrMore :: Parser a -> Parser [a]
 zeroOrMore p = oneOrMore p <|> pure []
 oneOrMore p = liftA2 (:) p (zeroOrMore p)
@@ -90,10 +91,6 @@ oneOrMore p = liftA2 (:) p (zeroOrMore p)
 sepByZeroOrMore, sepByOneOrMore :: Parser a -> Parser sep -> Parser [a]
 sepByZeroOrMore p sep = sepByOneOrMore p sep <|> pure []
 sepByOneOrMore p sep = liftA2 (:) p (zeroOrMore (sep *> p))
-
-------------------------------------------------------------
--- CORE CHARACTER PARSERS
-------------------------------------------------------------
 
 satisfyCond :: String -> (Char -> Bool) -> Parser Char
 satisfyCond description predicate = Parser $ \(s, pos) ->
@@ -119,10 +116,6 @@ satisfyCond description predicate = Parser $ \(s, pos) ->
                 (column pos)
           )
 
-------------------------------------------------------------
--- STRING AND KEYWORD HELPERS
-------------------------------------------------------------
-
 readUntilKeyword :: String -> Parser String
 readUntilKeyword kw = Parser $ \(s, pos) -> go s pos ""
   where
@@ -140,10 +133,6 @@ keyword kw = try $ Parser $ \(s, pos) ->
           newPos = foldl updatePosition pos (take (length kw) s)
        in (rest, newPos, Right kw)
     else (s, pos, Left $ ParseError ("expected keyword \"" ++ kw ++ "\"") (line pos) (column pos))
-
-------------------------------------------------------------
--- COMMON SYMBOL PARSERS
-------------------------------------------------------------
 
 newline :: Parser Char
 newline = satisfyCond "newline" (== '\n')

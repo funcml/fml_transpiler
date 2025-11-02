@@ -4,7 +4,7 @@ data FMLState = FMLState String String deriving (Show)
 
 data Attribute = Attribute String String deriving (Show)
 
-data FMLElement = FMLElement String [Attribute] [FMLElement] | FMLLiteral String deriving (Show)
+data FMLElement = FMLElement String [Attribute] [FMLElement] | FMLLiteral String | FMLExpression String deriving (Show)
 
 data FMLExpr
   = -- Declarations
@@ -21,8 +21,10 @@ data FMLExpr
 
 data ScriptExpr = JSExpr String | FMLExpr deriving (Show)
 
+data Prop = Prop String String deriving (Show)
+
 data FML
-  = FMLComponent String FMLElement
+  = FMLComponent String [Prop] FMLElement
   | FMLScript [ScriptExpr]
   | FMLStyle String String
   deriving (Show)

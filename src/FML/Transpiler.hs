@@ -6,18 +6,28 @@ import FML.Grammar
   ( Attribute (..),
     FML (FMLComponent),
     FMLElement (..),
+    Prop (..),
   )
 
 transpile :: [FML] -> String
 transpile components = unlines $ map transpileComponent components
 
 transpileComponent :: FML -> String
-transpileComponent (FMLComponent name body) =
-  "export default function " ++ name ++ "() {\n  return " ++ transpileElement body ++ ";\n}"
+transpileComponent (FMLComponent name props body) =
+  "export default function " ++ name ++ "(" ++ transpileProps props ++ ") {\n  return " ++ transpileElement body ++ ";\n}"
+
+transpileProps :: [Prop] -> String
+transpileProps [] = ""
+transpileProps props = "{ " ++ joinWithComma (map transpileProp props) ++ " }"
+
+transpileProp :: Prop -> String
+transpileProp (Prop name _) = name
 
 transpileElement :: FMLElement -> String
 transpileElement (FMLLiteral txt) =
   show txt
+transpileElement (FMLExpression expr) =
+  expr
 transpileElement (FMLElement tag attrs children) =
   "f(" ++ show tag ++ "," ++ transpileAttributes attrs ++ transpileChildren children ++ ")"
 
@@ -39,4 +49,6 @@ transpileChildren xs =
   "," ++ joinWithComma (map transpileElement xs)
 
 joinWithComma :: [String] -> String
-joinWithComma = foldr1 (\a b -> a ++ ", " ++ b)
+joinWithComma [] = ""
+joinWithComma [x] = x
+joinWithComma (x : xs) = x ++ ", " ++ joinWithComma xs
