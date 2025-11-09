@@ -40,6 +40,8 @@ transpileElement (FMLExpression expr) =
   expr
 transpileElement (FMLElement tag attrs children) =
   "f(" ++ show tag ++ "," ++ transpileAttributes attrs ++ transpileChildren children ++ ")"
+transpileElement (FMLCustomComponent name children) =
+  name ++ "(" ++ joinWithComma (map transpileElement children) ++ ")"
 
 transpileAttributes :: [Attribute] -> String
 transpileAttributes [] = "{}"

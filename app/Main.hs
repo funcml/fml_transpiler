@@ -45,7 +45,7 @@ testTranspile = do
           ("Nested", "MyComponent => (div (p (span \"text\")))"),
           ("Single child in parens", "MyComponent => (p (span))"),
           ("Tricky case with child and sibling", "MyComponent => (div (p) span)"),
-          ("Original test case", "Component => (ul (li (a href=\"/1\" $ \"Link 1\"), li (a href=\"/1\" $ \"Link 1\"), li))")
+          ("Composition", "A => (h1 $ \"A\")\nB => (h1 $ A)")
         ]
   mapM_ runTest tests
   putStrLn "--- Tests finished ---"

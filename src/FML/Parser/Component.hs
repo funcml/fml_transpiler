@@ -1,10 +1,10 @@
 module FML.Parser.Component where
 
-import Data.Char (isSpace)
+import Data.Char (isSpace, isUpper)
 import Data.List (partition)
-import FML.Grammar (Attribute (Attribute), FML (FMLComponent), FMLElement (FMLElement, FMLExpression, FMLLiteral), Prop (Prop))
+import FML.Grammar (Attribute (Attribute), FML (FMLComponent), FMLElement (FMLElement, FMLExpression, FMLLiteral, FMLCustomComponent), Prop (Prop))
 import FML.Lib.Parser (Parser)
-import FML.Parser.Utils (char, choice, identifier, lparen, operator, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<?>), (<|>))
+import FML.Parser.Utils (char, choice, identifier, lparen, operator, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<?>), (<|>), peekChar)
 
 -- A parser for one or more occurrences of `p`.
 some' :: Parser a -> Parser [a]
@@ -83,6 +83,20 @@ component =
       return $ FMLComponent name props body
   )
     <?> "a component definition (e.g., MyComponent => (div))"
+
+customComponentElement :: Parser FMLElement
+customComponentElement = do
+  name <- identifier
+  whitespaces
+  children <-
+    concat
+      <$> zeroOrMore
+        ( choice
+            [ childrenInParens,
+              inlineCompositionAsList
+            ]
+        )
+  return $ FMLCustomComponent name children
 
 childfreeElement :: Parser FMLElement
 childfreeElement = do
@@ -191,8 +205,15 @@ expression = do
   _ <- char ']'
   return $ FMLExpression expr
 
+tryCustomComponentOrElement :: Parser FMLElement
+tryCustomComponentOrElement = do
+  mc <- peekChar
+  case mc of
+    Just c | isUpper c -> customComponentElement
+    _ -> element
+
 childElement :: Parser FMLElement
-childElement = choice [element, literal, expression, childfreeElement] <?> "a child element (e.g. another element, or a string literal)"
+childElement = choice [literal, expression, tryCustomComponentOrElement] <?> "a child element (e.g. another element, or a string literal)"
 
 literal :: Parser FMLElement
 literal = (FMLLiteral <$> string) <?> "a string literal (e.g., \"some text\")"
