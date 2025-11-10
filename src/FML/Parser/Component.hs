@@ -153,14 +153,24 @@ element =
   )
     <?> "an element (e.g., div, p, h1)"
 
+-- A parser for a string of characters with balanced brackets.
+-- It starts after an opening bracket has been parsed.
+balancedBracketContent :: Int -> Parser String
+balancedBracketContent 0 = return ""
+balancedBracketContent level = do
+  c <- satisfyCond "any character" (const True)
+  case c of
+    ']' -> (c :) <$> balancedBracketContent (level - 1)
+    '[' -> (c :) <$> balancedBracketContent (level + 1)
+    _ -> (c :) <$> balancedBracketContent level
+
 expressionAttributeValue :: Parser AttributeValue
 expressionAttributeValue = do
   _ <- char '['
   whitespaces
-  expr <- zeroOrMore (satisfyCond "a js expression" (/= ']'))
+  expr <- balancedBracketContent 1
   whitespaces
-  _ <- char ']'
-  return $ ExpressionValue expr
+  return $ ExpressionValue (init expr)
 
 propAttribute :: Parser Attribute
 propAttribute =
@@ -212,10 +222,9 @@ expression :: Parser FMLElement
 expression = do
   _ <- char '['
   whitespaces
-  expr <- zeroOrMore (satisfyCond "a js expression" (/= ']'))
+  expr <- balancedBracketContent 1
   whitespaces
-  _ <- char ']'
-  return $ FMLExpression expr
+  return $ FMLExpression (init expr)
 
 tryCustomComponentOrElement :: Parser FMLElement
 tryCustomComponentOrElement = do
