@@ -4,6 +4,7 @@ module FML.Transpiler where
 
 import FML.Grammar
   ( Attribute (..),
+    AttributeValue (ExpressionValue, LiteralValue),
     FML (FMLComponent, FMLScript),
     FMLElement (..),
     FMLExpr (..),
@@ -40,8 +41,21 @@ transpileElement (FMLExpression expr) =
   expr
 transpileElement (FMLElement tag attrs children) =
   "f(" ++ show tag ++ "," ++ transpileAttributes attrs ++ transpileChildren children ++ ")"
-transpileElement (FMLCustomComponent name children) =
-  name ++ "(" ++ joinWithComma (map transpileElement children) ++ ")"
+transpileElement (FMLCustomComponent name attrs children) =
+  name ++ "(" ++ transpileProps' attrs children ++ ")"
+  where
+    transpileProps' :: [Attribute] -> [FMLElement] -> String
+    transpileProps' attributes childElements =
+      let transpiledAttrs = map transpileAttr attributes
+          transpiledChildren =
+            if null childElements
+              then []
+              else ["children: " ++ childrenString]
+          childrenString =
+            if length childElements == 1
+              then transpileElement (head childElements)
+              else "[" ++ joinWithComma (map transpileElement childElements) ++ "]"
+      in "{" ++ joinWithComma (transpiledAttrs ++ transpiledChildren) ++ "}"
 
 transpileAttributes :: [Attribute] -> String
 transpileAttributes [] = "{}"
@@ -49,11 +63,16 @@ transpileAttributes attrs =
   "{" ++ joinWithComma (map transpileAttr attrs) ++ "}"
 
 transpileAttr :: Attribute -> String
-transpileAttr (Attribute key val)
+transpileAttr (Attribute key (LiteralValue val))
+  | key == "class" = showKeyVal "className" (show val)
+  | otherwise = showKeyVal key (show val)
+  where
+    showKeyVal k v = show k ++ ": " ++ v
+transpileAttr (Attribute key (ExpressionValue val))
   | key == "class" = showKeyVal "className" val
   | otherwise = showKeyVal key val
   where
-    showKeyVal k v = show k ++ ": " ++ show v
+    showKeyVal k v = show k ++ ": " ++ v
 
 transpileChildren :: [FMLElement] -> String
 transpileChildren [] = ""

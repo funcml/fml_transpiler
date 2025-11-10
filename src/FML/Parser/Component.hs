@@ -2,7 +2,7 @@ module FML.Parser.Component where
 
 import Data.Char (isSpace, isUpper)
 import Data.List (partition)
-import FML.Grammar (Attribute (Attribute), FML (FMLComponent), FMLElement (FMLElement, FMLExpression, FMLLiteral, FMLCustomComponent), Prop (Prop))
+import FML.Grammar (Attribute (Attribute), AttributeValue (ExpressionValue, LiteralValue), FML (FMLComponent), FMLElement (FMLElement, FMLExpression, FMLLiteral, FMLCustomComponent), Prop (Prop))
 import FML.Lib.Parser (Parser)
 import FML.Parser.Utils (char, choice, identifier, lparen, operator, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<?>), (<|>), peekChar)
 
@@ -20,12 +20,12 @@ mergeAttributes attrs =
       (idAttrs, finalOthers) = partition (\(Attribute name _) -> name == "id") others1
 
       -- Collect all values and join them with spaces.
-      classValues = unwords [v | Attribute _ v <- classAttrs]
-      idValues = unwords [v | Attribute _ v <- idAttrs]
+      classValues = unwords [v | Attribute _ (LiteralValue v) <- classAttrs]
+      idValues = unwords [v | Attribute _ (LiteralValue v) <- idAttrs]
 
       -- Create new merged attributes if any values were found.
-      finalClassAttr = ([Attribute "class" classValues | not (null classValues)])
-      finalIdAttr = ([Attribute "id" idValues | not (null idValues)])
+      finalClassAttr = ([Attribute "class" (LiteralValue classValues) | not (null classValues)])
+      finalIdAttr = ([Attribute "id" (LiteralValue idValues) | not (null idValues)])
    in finalClassAttr ++ finalIdAttr ++ finalOthers
 
 trim :: String -> String
@@ -88,6 +88,8 @@ customComponentElement :: Parser FMLElement
 customComponentElement = do
   name <- identifier
   whitespaces
+  raw_attributes <- zeroOrMore $ choice [propAttribute, idAttribute, classAttribute]
+  let attributes = mergeAttributes raw_attributes
   children <-
     concat
       <$> zeroOrMore
@@ -96,7 +98,7 @@ customComponentElement = do
               inlineCompositionAsList
             ]
         )
-  return $ FMLCustomComponent name children
+  return $ FMLCustomComponent name attributes children
 
 childfreeElement :: Parser FMLElement
 childfreeElement = do
@@ -151,15 +153,25 @@ element =
   )
     <?> "an element (e.g., div, p, h1)"
 
+expressionAttributeValue :: Parser AttributeValue
+expressionAttributeValue = do
+  _ <- char '['
+  whitespaces
+  expr <- zeroOrMore (satisfyCond "a js expression" (/= ']'))
+  whitespaces
+  _ <- char ']'
+  return $ ExpressionValue expr
+
 propAttribute :: Parser Attribute
 propAttribute =
   ( do
       whitespaces
       propName <- identifier
       operator "="
-      Attribute propName <$> string
+      value <- (LiteralValue <$> string) <|> expressionAttributeValue
+      return $ Attribute propName value
   )
-    <?> "a property attribute (e.g., name=\"value\")"
+    <?> "a property attribute (e.g., name=\"value\" or name=[value])"
 
 -- Parses a name part after a prefix (e.g., 'class' from '.class')
 namePart :: Char -> Parser String
@@ -174,7 +186,7 @@ classAttribute =
       whitespaces
       -- Parses one or more chained class names (e.g., .class1.class2)
       names <- some' (namePart '.')
-      return $ Attribute "class" (unwords names)
+      return $ Attribute "class" (LiteralValue (unwords names))
   )
     <?> "a class attribute (e.g., .my-class)"
 
@@ -184,7 +196,7 @@ idAttribute =
       whitespaces
       -- Parses one or more chained id names (e.g., #id1#id2)
       names <- some' (namePart '#')
-      return $ Attribute "id" (unwords names)
+      return $ Attribute "id" (LiteralValue (unwords names))
   )
     <?> "an id attribute (e.g., #my-id)"
 

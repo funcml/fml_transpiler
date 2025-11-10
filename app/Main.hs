@@ -45,7 +45,9 @@ testTranspile = do
           ("Nested", "MyComponent => (div (p (span \"text\")))"),
           ("Single child in parens", "MyComponent => (p (span))"),
           ("Tricky case with child and sibling", "MyComponent => (div (p) span)"),
-          ("Composition", "A => (h1 $ \"A\")\nB => (h1 $ A)")
+          ("Composition", "A => (h1 $ \"A\")\nB => (h1 x=\"1\" $ A y=\"2\")"),
+          ("Custom component with children", "MyComponent => (CustomComp (div, span, AnotherComp))"),
+          ("Js Expr in Attr", "MyComponent => (div props=[(e) => setTodos([...todos, e.target.value])])")
         ]
   mapM_ runTest tests
   putStrLn "--- Tests finished ---"
