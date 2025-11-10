@@ -10,9 +10,9 @@
 
 module FML.Parser.Utils where
 
+import Data.Char (isDigit)
 import FML.Grammar
 import FML.Lib.Parser
-import Data.Char (isDigit)
 
 try :: Parser a -> Parser a
 try p = Parser $ \(s, pos) ->
@@ -37,7 +37,7 @@ choice (p : ps) = p <|> choice ps
 (<?>) :: Parser a -> String -> Parser a
 p <?> msg = Parser $ \(s, pos) ->
   case runParser p (s, pos) of
-    (s', pos', Left err)
+    (s', _, Left _)
       | s' == s -> (s, pos, Left $ ParseError msg (line pos) (column pos))
     res -> res
 
@@ -78,7 +78,8 @@ eof = Parser $ \case
   (c : cs, pos) ->
     ( c : cs,
       pos,
-      Left $ ParseError
+      Left $
+        ParseError
           ("expected end of input, but found '" ++ [c] ++ "'")
           (line pos)
           (column pos)
@@ -98,7 +99,8 @@ satisfyCond description predicate = Parser $ \(s, pos) ->
     [] ->
       ( [],
         pos,
-        Left $ ParseError
+        Left $
+          ParseError
             ("unexpected end of input, expected " ++ description)
             (line pos)
             (column pos)
@@ -108,7 +110,8 @@ satisfyCond description predicate = Parser $ \(s, pos) ->
       | otherwise ->
           ( x : xs,
             pos,
-            Left $ ParseError
+            Left $
+              ParseError
                 ("expected " ++ description ++ ", found '" ++ [x] ++ "'")
                 (line pos)
                 (column pos)

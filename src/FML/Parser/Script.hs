@@ -1,8 +1,8 @@
 module FML.Parser.Script where
 
-import FML.Grammar (FML (FMLScript), FMLExpr (SignalDeclaration), ScriptExpr (FMLDeclaration, JSExpr))
+import FML.Grammar (FML (FMLScript), ScriptExpr (JSExpr))
 import FML.Lib.Parser (Parser)
-import FML.Parser.Utils (anyChar, char, identifier, lparen, number, operator, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<|>))
+import FML.Parser.Utils (anyChar, char, operator, satisfyCond, whitespaces, zeroOrMore, (<|>))
 
 defaultValueParser :: Parser String
 defaultValueParser = zeroOrMore anyChar

@@ -2,9 +2,9 @@ module FML.Parser.Component where
 
 import Data.Char (isSpace, isUpper)
 import Data.List (partition)
-import FML.Grammar (Attribute (Attribute), AttributeValue (ExpressionValue, LiteralValue), FML (FMLComponent), FMLElement (FMLElement, FMLExpression, FMLLiteral, FMLCustomComponent), Prop (Prop))
+import FML.Grammar (Attribute (Attribute), AttributeValue (ExpressionValue, LiteralValue), FML (FMLComponent), FMLElement (FMLCustomComponent, FMLElement, FMLExpression, FMLLiteral), Prop (Prop))
 import FML.Lib.Parser (Parser)
-import FML.Parser.Utils (char, choice, identifier, lparen, operator, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<?>), (<|>), peekChar)
+import FML.Parser.Utils (char, choice, identifier, lparen, operator, peekChar, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<?>), (<|>))
 
 -- A parser for one or more occurrences of `p`.
 some' :: Parser a -> Parser [a]
@@ -63,7 +63,7 @@ component =
       name <- identifier
       whitespaces
       -- Optional props
-      props <- (props <|> return [])
+      componentProps <- props <|> return []
       whitespaces
       operator "=>"
       lparen
@@ -80,7 +80,7 @@ component =
       let body = case children of
             [el] -> el
             _ -> FMLElement "fragment" [] children
-      return $ FMLComponent name props body
+      return $ FMLComponent name componentProps body
   )
     <?> "a component definition (e.g., MyComponent => (div))"
 
