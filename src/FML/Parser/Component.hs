@@ -2,7 +2,7 @@ module FML.Parser.Component where
 
 import Data.Char (isSpace, isUpper)
 import Data.List (partition)
-import FML.Grammar (Attribute (Attribute), AttributeValue (ExpressionValue, LiteralValue), FML (FMLComponent), FMLElement (FMLCustomComponent, FMLElement, FMLExpression, FMLLiteral), Prop (Prop))
+import FML.Grammar (Attribute (Attribute), AttributeValue (ExpressionValue, LiteralValue), FML (FMLComponent), FMLElement (FMLCustomComponent, FMLElement, FMLExpression, FMLLiteral, FMLListComprehension), Prop (Prop))
 import FML.Lib.Parser (Parser)
 import FML.Parser.Utils (char, choice, identifier, lparen, operator, peekChar, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<?>), (<|>))
 
@@ -229,8 +229,55 @@ tryCustomComponentOrElement = do
     Just c | isUpper c -> customComponentElement
     _ -> element
 
+balancedExpr :: Parser String
+balancedExpr = fmap trim (go 0 0 0)
+  where
+    go :: Int -> Int -> Int -> Parser String
+    go parens brackets braces = do
+      mc <- peekChar
+      case mc of
+        Just ',' | parens == 0 && brackets == 0 && braces == 0 -> return ""
+        Just ']' | parens <= 0 && brackets <= 0 && braces <= 0 -> return ""
+        Just c -> do
+          _ <- satisfyCond "any char" (const True)
+          let newParens = if c == '(' then parens + 1 else if c == ')' then parens - 1 else parens
+          let newBrackets = if c == '[' then brackets + 1 else if c == ']' then brackets - 1 else brackets
+          let newBraces = if c == '{' then braces + 1 else if c == '}' then braces - 1 else braces
+          rest <- go newParens newBrackets newBraces
+          return (c : rest)
+        Nothing -> return ""
+
+listComprehension :: Parser FMLElement
+listComprehension =
+  ( do
+      _ <- char '@'
+      _ <- char '['
+      whitespaces
+      elementToRender <- childElement
+      whitespaces
+      _ <- char ','
+      whitespaces
+      var <- identifier
+      whitespaces
+      operator "<-"
+      whitespaces
+      listExpr <- balancedExpr
+      whitespaces
+      filters <-
+        zeroOrMore
+          ( do
+              _ <- char ','
+              whitespaces
+              balancedExpr
+          )
+      whitespaces
+      _ <- char ']'
+      return $ FMLListComprehension elementToRender var listExpr filters
+  )
+    <?> "a list comprehension (e.g., @[li, x <- xs, x > 0])"
+
 childElement :: Parser FMLElement
-childElement = choice [literal, expression, tryCustomComponentOrElement] <?> "a child element (e.g. another element, or a string literal)"
+childElement = choice [literal, expression, listComprehension, tryCustomComponentOrElement] <?> "a child element (e.g. another element, or a string literal)"
 
 literal :: Parser FMLElement
 literal = (FMLLiteral <$> string) <?> "a string literal (e.g., \"some text\")"

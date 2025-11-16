@@ -3,9 +3,16 @@ module FML.Grammar where
 data FMLState = FMLState String String deriving (Show)
 
 data AttributeValue = LiteralValue String | ExpressionValue String deriving (Show)
+
 data Attribute = Attribute String AttributeValue deriving (Show)
 
-data FMLElement = FMLElement String [Attribute] [FMLElement] | FMLLiteral String | FMLExpression String | FMLCustomComponent String [Attribute] [FMLElement] deriving (Show)
+data FMLElement
+  = FMLElement String [Attribute] [FMLElement]
+  | FMLLiteral String
+  | FMLExpression String
+  | FMLListComprehension FMLElement String String [String]
+  | FMLCustomComponent String [Attribute] [FMLElement]
+  deriving (Show)
 
 data FMLExpr
   = -- Declarations

@@ -38,6 +38,10 @@ transpileElement (FMLLiteral txt) =
   show txt
 transpileElement (FMLExpression expr) =
   expr
+transpileElement (FMLListComprehension element var listExpr filters) =
+  let mapPart = ".map(" ++ var ++ " => " ++ transpileElement element ++ ")"
+      filterPart = concatMap (\filterExpr -> ".filter(" ++ var ++ " => " ++ filterExpr ++ ")") filters
+   in "() => " ++ listExpr ++ filterPart ++ mapPart
 transpileElement (FMLElement tag attrs children) =
   "f(" ++ show tag ++ "," ++ transpileAttributes attrs ++ transpileChildren children ++ ")"
 transpileElement (FMLCustomComponent name attrs children) =

@@ -1,5 +1,3 @@
-function BasicComponent() {
-    return <#>(
-        h1 $ "Hello world"
-    )
-}
+A => (
+    div onclick=[() => set]
+)

@@ -48,7 +48,8 @@ testTranspile = do
           ("Composition", "A => (h1 $ \"A\")\nB => (h1 x=\"1\" $ A y=\"2\")"),
           ("Custom component with children", "MyComponent => (CustomComp (div, span, AnotherComp))"),
           ("$ Test", "MyComponent => (CustomComp \n$ a\n$ b\n$ c)"),
-          ("Js Expr in Attr", "MyComponent => (div props=[(e) => setTodos([...todos, e.target.value])])")
+          ("Js Expr in Attr", "MyComponent => (div props=[(e) => setTodos([...todos, e.target.value])])"),
+          ("List comprehension", "A => (ul $ @[li x=[1] $ [title], title <- todos(), title.isLower()])")
         ]
   mapM_ runTest tests
   putStrLn "--- Tests finished ---"
