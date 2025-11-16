@@ -153,8 +153,6 @@ element =
   )
     <?> "an element (e.g., div, p, h1)"
 
--- A parser for a string of characters with balanced brackets.
--- It starts after an opening bracket has been parsed.
 balancedBracketContent :: Int -> Parser String
 balancedBracketContent 0 = return ""
 balancedBracketContent level = do
@@ -194,7 +192,6 @@ classAttribute :: Parser Attribute
 classAttribute =
   ( do
       whitespaces
-      -- Parses one or more chained class names (e.g., .class1.class2)
       names <- some' (namePart '.')
       return $ Attribute "class" (LiteralValue (unwords names))
   )
@@ -204,7 +201,6 @@ idAttribute :: Parser Attribute
 idAttribute =
   ( do
       whitespaces
-      -- Parses one or more chained id names (e.g., #id1#id2)
       names <- some' (namePart '#')
       return $ Attribute "id" (LiteralValue (unwords names))
   )

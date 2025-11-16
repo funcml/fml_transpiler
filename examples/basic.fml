@@ -1,0 +1,5 @@
+function BasicComponent() {
+    return <#>(
+        h1 $ "Hello world"
+    )
+}

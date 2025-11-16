@@ -41,7 +41,7 @@ transpileElement (FMLExpression expr) =
 transpileElement (FMLElement tag attrs children) =
   "f(" ++ show tag ++ "," ++ transpileAttributes attrs ++ transpileChildren children ++ ")"
 transpileElement (FMLCustomComponent name attrs children) =
-  name ++ "(" ++ transpileProps' attrs children ++ ")"
+  name ++ "(Object.freeze(" ++ transpileProps' attrs children ++ "))"
   where
     transpileProps' :: [Attribute] -> [FMLElement] -> String
     transpileProps' attributes childElements =
@@ -52,7 +52,7 @@ transpileElement (FMLCustomComponent name attrs children) =
             if length childElements == 1
               then transpileElement (head childElements)
               else "[" ++ joinWithComma (map transpileElement childElements) ++ "]"
-       in "{" ++ joinWithComma (transpiledAttrs ++ transpiledChildren) ++ "}"
+       in "(Object.freeze({" ++ joinWithComma (transpiledAttrs ++ transpiledChildren) ++ "}))"
 
 transpileAttributes :: [Attribute] -> String
 transpileAttributes [] = "{}"

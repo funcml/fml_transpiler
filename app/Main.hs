@@ -47,6 +47,7 @@ testTranspile = do
           ("Tricky case with child and sibling", "MyComponent => (div (p) span)"),
           ("Composition", "A => (h1 $ \"A\")\nB => (h1 x=\"1\" $ A y=\"2\")"),
           ("Custom component with children", "MyComponent => (CustomComp (div, span, AnotherComp))"),
+          ("$ Test", "MyComponent => (CustomComp \n$ a\n$ b\n$ c)"),
           ("Js Expr in Attr", "MyComponent => (div props=[(e) => setTodos([...todos, e.target.value])])")
         ]
   mapM_ runTest tests
@@ -57,9 +58,10 @@ printHelp = do
   putStrLn "fmlc — FML Compiler"
   putStrLn ""
   putStrLn "Usage:"
-  putStrLn "  fmlc -c <source>     Compile inline FML source to JavaScript"
-
-  putStrLn "  fmlc --help          Show this help message"
+  putStrLn "  fmlc -c <source>         Compile inline FML source to JavaScript"
+  putStrLn "  fmlc -f <file>           Compile FML source file to JavaScript"
+  putStrLn "  fmlc -f <file> -o <out>  Compile FML source file and write output to <out>"
+  putStrLn "  fmlc --help              Show this help message"
   putStrLn ""
   putStrLn "Examples:"
   putStrLn "  fmlc -c \"div(class='greet') 'Hello world'\""
@@ -80,6 +82,14 @@ main = do
     ("--test" : _) -> do
       testTranspile
       exitSuccess
+    ("-f" : filePath : "-o" : outPath : _) -> do
+      input <- readFile filePath
+      let output = compile input
+      writeFile outPath output
+    ("-f" : filePath : _) -> do
+      input <- readFile filePath
+      let output = compile input
+      putStrLn output
     _ -> do
       hPutStrLn stderr "Unknown command: use --help for more info"
       exitFailure
