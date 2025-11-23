@@ -1,8 +1,11 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use guards" #-}
 module FML.Parser.Component where
 
 import Data.Char (isSpace, isUpper)
 import Data.List (partition)
-import FML.Grammar (Attribute (Attribute), AttributeValue (ExpressionValue, LiteralValue), FML (FMLComponent), FMLElement (FMLCustomComponent, FMLElement, FMLExpression, FMLLiteral, FMLListComprehension), Prop (Prop))
+import FML.Grammar (Attribute (Attribute), AttributeValue (ExpressionValue, LiteralValue), FML (FMLComponent), FMLElement (FMLCustomComponent, FMLElement, FMLExpression, FMLListComprehension, FMLLiteral), Prop (Prop))
 import FML.Lib.Parser (Parser)
 import FML.Parser.Utils (char, choice, identifier, lparen, operator, peekChar, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<?>), (<|>))
 
@@ -170,7 +173,8 @@ expressionAttributeValue = do
   whitespaces
   return $ ExpressionValue (init expr)
 
-propAttribute :: Parser Attribute
+propAttribute ::
+  Parser Attribute
 propAttribute =
   ( do
       whitespaces
@@ -229,6 +233,59 @@ tryCustomComponentOrElement = do
     Just c | isUpper c -> customComponentElement
     _ -> element
 
+-- Inline composition for list comprehension context
+inlineCompositionInListComp :: Parser FMLElement
+inlineCompositionInListComp = do
+  operator "$"
+  childElementInListComp
+
+-- Element parser for list comprehension that handles inline composition correctly
+elementInListComp :: Parser FMLElement
+elementInListComp = do
+  tag <- identifier
+  whitespaces
+  raw_attributes <- zeroOrMore $ choice [propAttribute, idAttribute, classAttribute]
+  let attributes = mergeAttributes raw_attributes
+  children <- zeroOrMore (whitespaces *> inlineCompositionInListComp)
+  return $ FMLElement tag attributes children
+
+-- Custom component parser for list comprehension
+customComponentElementInListComp :: Parser FMLElement
+customComponentElementInListComp = do
+  name <- identifier
+  whitespaces
+  raw_attributes <- zeroOrMore $ choice [propAttribute, idAttribute, classAttribute]
+  let attributes = mergeAttributes raw_attributes
+  children <- zeroOrMore (whitespaces *> inlineCompositionInListComp)
+  return $ FMLCustomComponent name attributes children
+
+-- Try custom component or element in list comprehension context
+tryCustomComponentOrElementInListComp :: Parser FMLElement
+tryCustomComponentOrElementInListComp = do
+  mc <- peekChar
+  case mc of
+    Just c | isUpper c -> customComponentElementInListComp
+    _ -> elementInListComp
+
+-- Helper to parse balanced content that stops at a comma at the current nesting level
+balancedExprInListComp :: Parser String
+balancedExprInListComp = fmap trim (go 0 0 0)
+  where
+    go :: Int -> Int -> Int -> Parser String
+    go parens brackets braces = do
+      mc <- peekChar
+      case mc of
+        Just ',' | parens == 0 && brackets == 0 && braces == 0 -> return ""
+        Just ']' | parens == 0 && brackets == 0 && braces == 0 -> return ""
+        Just c -> do
+          _ <- satisfyCond "any char" (const True)
+          let newParens = if c == '(' then parens + 1 else if c == ')' then parens - 1 else parens
+          let newBrackets = if c == '[' then brackets + 1 else if c == ']' then brackets - 1 else brackets
+          let newBraces = if c == '{' then braces + 1 else if c == '}' then braces - 1 else braces
+          rest <- go newParens newBrackets newBraces
+          return (c : rest)
+        Nothing -> return ""
+
 balancedExpr :: Parser String
 balancedExpr = fmap trim (go 0 0 0)
   where
@@ -247,31 +304,101 @@ balancedExpr = fmap trim (go 0 0 0)
           return (c : rest)
         Nothing -> return ""
 
+-- Better low-level expectation helpers
+expectChar :: Char -> String -> Parser Char
+expectChar c desc = char c <?> desc
+
+expectOperator :: String -> String -> Parser ()
+expectOperator op desc = operator op <?> desc
+
+-- Explicit end-of-input without MonadFail; produce clearer message
+endOfInput :: Parser ()
+endOfInput = do
+  mc <- peekChar
+  case mc of
+    Nothing -> return ()
+    Just ch -> do
+      -- Force a labeled failure; predicate always False
+      _ <- satisfyCond ("no trailing input (unexpected '" ++ [ch] ++ "')") (const False)
+      return ()
+
+-- Public entry point with improved error reporting
+topLevelComponent :: Parser FML
+topLevelComponent =
+  whitespaces *> (component <?> "a component definition") <* whitespaces <* endOfInput
+
+destructuredObj :: Parser String
+destructuredObj = do
+  _ <- expectChar '{' "opening '{' for object destructuring"
+  whitespaces
+  content <- zeroOrMore (satisfyCond "object destructuring content" (/= '}'))
+  whitespaces
+  _ <- expectChar '}' "closing '}' for object destructuring"
+  return $ "{" ++ trim content ++ "}"
+
+destructuredArr :: Parser String
+destructuredArr = do
+  _ <- expectChar '[' "opening '[' for array destructuring"
+  whitespaces
+  content <- zeroOrMore (satisfyCond "array destructuring content" (/= ']'))
+  whitespaces
+  _ <- expectChar ']' "closing ']' for array destructuring"
+  return $ "[" ++ trim content ++ "]"
+
+destructuedTuple :: Parser String
+destructuedTuple = do
+  _ <- expectChar '(' "opening '(' for tuple destructuring"
+  whitespaces
+  content <- zeroOrMore (satisfyCond "tuple destructuring content" (/= ')'))
+  whitespaces
+  _ <- expectChar ')' "closing ')' for tuple destructuring"
+  return $ "(" ++ trim content ++ ")"
+
+-- Expression parser that stops at comma in list comprehension context
+expressionInListComp :: Parser FMLElement
+expressionInListComp = do
+  _ <- char '['
+  whitespaces
+  expr <- balancedExprInListComp
+  whitespaces
+  _ <- char ']'
+  return $ FMLExpression expr
+
+-- Child element parser for list comprehension that handles comma boundaries
+childElementInListComp :: Parser FMLElement
+childElementInListComp = choice [literal, expressionInListComp, tryCustomComponentOrElementInListComp] <?> "a child element in list comprehension"
+
 listComprehension :: Parser FMLElement
 listComprehension =
   ( do
-      _ <- char '@'
-      _ <- char '['
+      _ <- expectChar '@' "start of list comprehension '@['"
+      _ <- expectChar '[' "opening '[' after '@'"
       whitespaces
-      elementToRender <- childElement
+      elementToRender <- childElementInListComp <?> "element to render first (e.g., li)"
       whitespaces
-      _ <- char ','
+      _ <- expectChar ',' "comma separating element and binding (e.g., li , x <- ...)"
       whitespaces
-      var <- identifier
+      var <-
+        choice
+          [ destructuredObj <?> "object destructuring (e.g., {a,b})",
+            destructuredArr <?> "array destructuring (e.g., [a,b])",
+            destructuedTuple <?> "tuple destructuring (e.g., (a,b))",
+            identifier <?> "loop variable identifier"
+          ]
       whitespaces
-      operator "<-"
+      _ <- expectOperator "<-" "binding operator '<-'"
       whitespaces
-      listExpr <- balancedExpr
+      listExpr <- balancedExpr <?> "list expression after '<-'"
       whitespaces
       filters <-
         zeroOrMore
           ( do
-              _ <- char ','
+              _ <- expectChar ',' "comma before filter expression"
               whitespaces
-              balancedExpr
+              balancedExpr <?> "filter expression"
           )
       whitespaces
-      _ <- char ']'
+      _ <- expectChar ']' "closing ']' of list comprehension"
       return $ FMLListComprehension elementToRender var listExpr filters
   )
     <?> "a list comprehension (e.g., @[li, x <- xs, x > 0])"

@@ -56,7 +56,7 @@ testTranspile = do
 
 printHelp :: IO ()
 printHelp = do
-  putStrLn "fmlc — FML Compiler"
+  putStrLn "fmlc — FML Compiler v0.1.0 w4 a0.0.1"
   putStrLn ""
   putStrLn "Usage:"
   putStrLn "  fmlc -c <source>         Compile inline FML source to JavaScript"

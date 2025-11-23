@@ -1,5 +1,5 @@
 A => (ul $ @[
     li x=[1] $ [title], 
-    title <- todos(), 
+    {title, desc} <- todos(), 
     title.isLower()
 ])
