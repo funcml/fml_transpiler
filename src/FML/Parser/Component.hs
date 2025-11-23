@@ -5,9 +5,9 @@ module FML.Parser.Component where
 
 import Data.Char (isSpace, isUpper)
 import Data.List (partition)
-import FML.Grammar (Attribute (Attribute), AttributeValue (ExpressionValue, LiteralValue), FML (FMLComponent), FMLElement (FMLCustomComponent, FMLElement, FMLExpression, FMLListComprehension, FMLLiteral), Prop (Prop))
-import FML.Lib.Parser (Parser)
-import FML.Parser.Utils (char, choice, identifier, lparen, operator, peekChar, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<?>), (<|>))
+import FML.Grammar (Attribute (Attribute), AttributeValue (ExpressionValue, LiteralValue), FML (FMLComponent), FMLElement (FMLCustomComponent, FMLElement, FMLExpression, FMLGuards, FMLListComprehension, FMLLiteral), Prop (Prop))
+import FML.Lib.Parser (Parser (Parser))
+import FML.Parser.Utils (char, choice, identifier, lparen, operator, peekChar, readUntilKeyword, rparen, satisfyCond, string, whitespaces, zeroOrMore, (<?>), (<|>))
 
 -- A parser for one or more occurrences of `p`.
 some' :: Parser a -> Parser [a]
@@ -15,6 +15,10 @@ some' p = do
   x <- p
   xs <- zeroOrMore p
   return (x : xs)
+
+-- A parser for an optional occurrence of `p`.
+optional :: Parser a -> Parser (Maybe a)
+optional p = (Just <$> p) <|> return Nothing
 
 -- Helper to merge multiple class or id attributes into one.
 mergeAttributes :: [Attribute] -> [Attribute]
@@ -226,6 +230,11 @@ expression = do
   whitespaces
   return $ FMLExpression (init expr)
 
+-- Parser for a string literal element
+literal :: Parser FMLElement
+literal =
+  (FMLLiteral <$> string) <?> "a string literal (e.g., \"hello\")"
+
 tryCustomComponentOrElement :: Parser FMLElement
 tryCustomComponentOrElement = do
   mc <- peekChar
@@ -365,8 +374,12 @@ expressionInListComp = do
   return $ FMLExpression expr
 
 -- Child element parser for list comprehension that handles comma boundaries
-childElementInListComp :: Parser FMLElement
-childElementInListComp = choice [literal, expressionInListComp, tryCustomComponentOrElementInListComp] <?> "a child element in list comprehension"
+childElementInListComp ::
+  Parser FMLElement
+childElementInListComp =
+  whitespaces
+    *> choice [literal, expressionInListComp, ifBlock, tryCustomComponentOrElementInListComp]
+      <?> "a child element in list comprehension"
 
 listComprehension :: Parser FMLElement
 listComprehension =
@@ -403,8 +416,65 @@ listComprehension =
   )
     <?> "a list comprehension (e.g., @[li, x <- xs, x > 0])"
 
-childElement :: Parser FMLElement
-childElement = choice [literal, expression, listComprehension, tryCustomComponentOrElement] <?> "a child element (e.g. another element, or a string literal)"
+-- Lookahead for upcoming control keywords without consuming input.
+nextIsKeyword :: [String] -> Parser Bool
+nextIsKeyword kws = Parser $ \(s, pos) ->
+  let skipSpaces = dropWhile isSpace s
+      found = any (\k -> k == take (length k) skipSpaces) kws
+   in (s, pos, Right found)
 
-literal :: Parser FMLElement
-literal = (FMLLiteral <$> string) <?> "a string literal (e.g., \"some text\")"
+emptyFragment :: FMLElement
+emptyFragment = FMLElement "fragment" [] []
+
+-- Branch body: parse one child element unless next token starts a new clause.
+branchBody :: Parser FMLElement
+branchBody = do
+  whitespaces
+  stop <- nextIsKeyword ["elif", "else", "end"]
+  if stop
+    then pure emptyFragment
+    else childElementNonIf
+
+-- Non-if child element (used inside branches to prevent left-recursive loops).
+childElementNonIf :: Parser FMLElement
+childElementNonIf =
+  whitespaces
+    *> choice [literal, expression, listComprehension, tryCustomComponentOrElement]
+      <?> "a branch child element"
+
+-- New if/elif/else/end if block producing FMLGuards.
+ifBlock :: Parser FMLElement
+ifBlock = do
+  _ <- operator "if"
+  cond <- trim <$> readUntilKeyword "then"
+  _ <- operator "then"
+  firstEl <- branchBody
+  elifs <- zeroOrMore elifBlock
+  finalElse <- optional elseBlock
+  whitespaces
+  _ <- operator "end"
+  _ <- operator "if"
+  return $ FMLGuards ((cond, firstEl) : elifs) finalElse
+
+elifBlock :: Parser (String, FMLElement)
+elifBlock = do
+  whitespaces
+  _ <- operator "elif"
+  cond <- trim <$> readUntilKeyword "then"
+  _ <- operator "then"
+  el <- branchBody
+  return (cond, el)
+
+elseBlock :: Parser FMLElement
+elseBlock = do
+  whitespaces
+  _ <- operator "else"
+  optional (operator "then")
+  branchBody
+
+-- Replace old childElement to include ifBlock
+childElement :: Parser FMLElement
+childElement =
+  whitespaces
+    *> choice [literal, expression, ifBlock, listComprehension, tryCustomComponentOrElement]
+      <?> "a child element (e.g. another element, or a string literal)"

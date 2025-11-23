@@ -57,6 +57,16 @@ transpileElement (FMLCustomComponent name attrs children) =
               then transpileElement (head childElements)
               else "[" ++ joinWithComma (map transpileElement childElements) ++ "]"
        in "(Object.freeze({" ++ joinWithComma (transpiledAttrs ++ transpiledChildren) ++ "}))"
+transpileElement (FMLGuards branches maybeElse) =
+  "(() => {\n" ++ concatMap transpileBranch branches ++ transpileElse maybeElse ++ "})()"
+  where
+    transpileBranch :: (String, FMLElement) -> String
+    transpileBranch (cond, e) =
+      "  if (" ++ cond ++ ") {\n    return " ++ transpileElement e ++ ";\n  }\n"
+    transpileElse :: Maybe FMLElement -> String
+    transpileElse Nothing = ""
+    transpileElse (Just e) =
+      "  else {\n    return " ++ transpileElement e ++ ";\n  }\n"
 
 transpileAttributes :: [Attribute] -> String
 transpileAttributes [] = "{}"

@@ -12,6 +12,7 @@ data FMLElement
   | FMLExpression String
   | FMLListComprehension FMLElement String String [String]
   | FMLCustomComponent String [Attribute] [FMLElement]
+  | FMLGuards [(String, FMLElement)] (Maybe FMLElement)
   deriving (Show)
 
 data FMLExpr

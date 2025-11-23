@@ -87,6 +87,16 @@ main = do
       input <- readFile filePath
       let output = compile input
       writeFile outPath output
+    ("-f" : filePath : "-o" : outPath : "-v" : _) -> do
+      input <- readFile filePath
+      let output = compile input
+      writeFile outPath output
+      putStrLn $ "AST: " ++ show (run fml input)
+    ("-f" : filePath : "-v" : _) -> do
+      input <- readFile filePath
+      let output = compile input
+      putStrLn output
+      putStrLn $ "AST: " ++ show (run fml input)
     ("-f" : filePath : _) -> do
       input <- readFile filePath
       let output = compile input
