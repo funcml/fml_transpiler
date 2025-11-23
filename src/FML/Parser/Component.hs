@@ -231,7 +231,8 @@ expression = do
   return $ FMLExpression (init expr)
 
 -- Parser for a string literal element
-literal :: Parser FMLElement
+literal ::
+  Parser FMLElement
 literal =
   (FMLLiteral <$> string) <?> "a string literal (e.g., \"hello\")"
 
@@ -320,21 +321,10 @@ expectChar c desc = char c <?> desc
 expectOperator :: String -> String -> Parser ()
 expectOperator op desc = operator op <?> desc
 
--- Explicit end-of-input without MonadFail; produce clearer message
-endOfInput :: Parser ()
-endOfInput = do
-  mc <- peekChar
-  case mc of
-    Nothing -> return ()
-    Just ch -> do
-      -- Force a labeled failure; predicate always False
-      _ <- satisfyCond ("no trailing input (unexpected '" ++ [ch] ++ "')") (const False)
-      return ()
-
 -- Public entry point with improved error reporting
 topLevelComponent :: Parser FML
 topLevelComponent =
-  whitespaces *> (component <?> "a component definition") <* whitespaces <* endOfInput
+  whitespaces *> (component <?> "a component definition") <* whitespaces
 
 destructuredObj :: Parser String
 destructuredObj = do
@@ -416,33 +406,41 @@ listComprehension =
   )
     <?> "a list comprehension (e.g., @[li, x <- xs, x > 0])"
 
--- Lookahead for upcoming control keywords without consuming input.
+-- Lookahead helper to see if the next (non-space) token starts a new clause.
 nextIsKeyword :: [String] -> Parser Bool
 nextIsKeyword kws = Parser $ \(s, pos) ->
-  let skipSpaces = dropWhile isSpace s
-      found = any (\k -> k == take (length k) skipSpaces) kws
+  let rest = dropWhile isSpace s
+      found = any (\k -> k == take (length k) rest) kws
    in (s, pos, Right found)
 
 emptyFragment :: FMLElement
 emptyFragment = FMLElement "fragment" [] []
 
--- Branch body: parse one child element unless next token starts a new clause.
+-- Parenthesized single child element (for easier grouping in if branches)
+groupedChild :: Parser FMLElement
+groupedChild = do
+  lparen
+  whitespaces
+  el <- childElement
+  whitespaces
+  rparen
+  return el
+
+-- Non-if child element (used inside branch bodies to avoid immediate if recursion).
+childElementNonIf :: Parser FMLElement
+childElementNonIf =
+  whitespaces
+    *> choice [groupedChild, literal, expression, listComprehension, tryCustomComponentOrElement]
+      <?> "a branch child element"
+
+-- Branch body: parse a single child unless the next token begins elif/else/end.
 branchBody :: Parser FMLElement
 branchBody = do
   whitespaces
   stop <- nextIsKeyword ["elif", "else", "end"]
-  if stop
-    then pure emptyFragment
-    else childElementNonIf
+  if stop then pure emptyFragment else childElementNonIf
 
--- Non-if child element (used inside branches to prevent left-recursive loops).
-childElementNonIf :: Parser FMLElement
-childElementNonIf =
-  whitespaces
-    *> choice [literal, expression, listComprehension, tryCustomComponentOrElement]
-      <?> "a branch child element"
-
--- New if/elif/else/end if block producing FMLGuards.
+-- if / elif / else / end if block producing FMLGuards
 ifBlock :: Parser FMLElement
 ifBlock = do
   _ <- operator "if"
@@ -472,8 +470,9 @@ elseBlock = do
   optional (operator "then")
   branchBody
 
--- Replace old childElement to include ifBlock
-childElement :: Parser FMLElement
+-- Replace old childElement to add ifBlock
+childElement ::
+  Parser FMLElement
 childElement =
   whitespaces
     *> choice [literal, expression, ifBlock, listComprehension, tryCustomComponentOrElement]

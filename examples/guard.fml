@@ -1,11 +1,13 @@
 GuardDemo => (
   div (
     if a then
-        
+        (h1 $ h2 (
+            "Hellow"
+        ))
     elif b then
-        
+       (h1 $ "Hi")
     else then
-    
+        (h1 $ "Howdy!")
     end if
   )
 )
