@@ -17,41 +17,18 @@
 Here are some basic FunML syntax examples:
 
 ```funml
-:style (
-    * {
-        padding: 0;
-        margin: 0;
-    }
+script (
+  import { createSignal } from '@lib';
+  
+  const [count, setCount] = createSignal(0);
 )
 
-:script CounterScript (
-    const increment = (count) => {
-        set(count, count + 1)
-    }
-
-    use(increment, () => {
-        console.log(increment)
-    })
-)
-
-:component Counter (initial)
-    :using CounterScript
-    :state count initial
-    (
-        :div class="flex items-center justify-center" (
-            :h1 (
-                "The count is: " + get(count)
-            )
-            :button class="rounded-md px-3 py-2 border" $ @click |> increment(count) $ "Increment Count!"
-        )
-    )
-
-:component App
-(
-    :main (
-        :h1 $ "This is the app!"
-        :Counter initial=5
-    )
+Counter => (
+  div class="p-4 bg-gray-100 rounded-lg text-center" (
+    h1 class="text-2xl font-bold mb-4" $ "Hello world",
+    p class="" $ [() => `Counter: ${count()}`],
+    button onclick=[() => setCount(prev => prev + 1)] $ "Increment"
+  )
 )
 ```
 
