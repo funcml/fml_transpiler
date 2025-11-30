@@ -1,13 +1,14 @@
 GuardDemo => (
   div (
-    if a then
+    @if a then
         (h1 $ h2 (
-            "Hellow"
+            "Hellow",
+            iframe
         ))
-    elif b then
+    @elif b then
        (h1 $ "Hi")
-    else then
+    @else then
         (h1 $ "Howdy!")
-    end if
+    @end if
   )
 )

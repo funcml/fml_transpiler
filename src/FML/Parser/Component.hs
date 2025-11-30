@@ -443,21 +443,21 @@ branchBody = do
 -- if / elif / else / end if block producing FMLGuards
 ifBlock :: Parser FMLElement
 ifBlock = do
-  _ <- operator "if"
+  _ <- operator "@if"
   cond <- trim <$> readUntilKeyword "then"
   _ <- operator "then"
   firstEl <- branchBody
   elifs <- zeroOrMore elifBlock
   finalElse <- optional elseBlock
   whitespaces
-  _ <- operator "end"
+  _ <- operator "@end"
   _ <- operator "if"
   return $ FMLGuards ((cond, firstEl) : elifs) finalElse
 
 elifBlock :: Parser (String, FMLElement)
 elifBlock = do
   whitespaces
-  _ <- operator "elif"
+  _ <- operator "@elif"
   cond <- trim <$> readUntilKeyword "then"
   _ <- operator "then"
   el <- branchBody
@@ -466,7 +466,7 @@ elifBlock = do
 elseBlock :: Parser FMLElement
 elseBlock = do
   whitespaces
-  _ <- operator "else"
+  _ <- operator "@else"
   optional (operator "then")
   branchBody
 
