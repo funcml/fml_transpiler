@@ -51,19 +51,13 @@ Counter => (
 
 
 ### 📚 Lesson Learnt
-#### 1.  Week 1
-
 ##### Parser Combinator
 
 Untuk melakukan parsing dan transpilasi, kita menggabungkan berbagai macam instance dari type Parser berikut untuk consume string input jika pattern tertentu terpenuhi.
 
-#### 2. Week 2
-
 ##### “Power” dari Monad
 
 Monad memungkinkan komposisi yang mentransformasi suatu value serta manajemen state secara pure.
-
-#### 3.  Week 3
 
 ##### Balanced Parentheses / Bracket Parsing
 
@@ -76,12 +70,6 @@ Monad memungkinkan komposisi yang mentransformasi suatu value serta manajemen st
 - Dari pembuatan parser untuk templating language ini, saya mendapati mengapa format syntax HTML/JSX cukup populer. Tidak hanya karena format ini umum digunakan, tapi juga proses parsing menjadi jauh lebih sederhana. Hal ini karena start dan end serta delimiter pada syntax HTML/JSX memiliki ambiguitas yang lebih sedikit. Hal ini menurunkan jumlah edge cases serta kompleksitas dari parser.
 
 - Jadi lesson learned disini adalah banyak sekali edge case yang perlu dipikirkan saat merancang syntax. Dan perlu dipertimbangkan juga apakah solusi baru itu lebih baik dibanding solusi yang sudah ada. Dari sini juga terlihat terdapat beberapa design choice  “hidden” pada bahasa yang biasa kita gunakan  serta compromise antara kompleksitas parsing/compiling dengan developer experience.
-
-#### 4.  Week 4
-
-Go [here](https://github.com/funcml/funcml_runtime/blob/main/README.md) to see our lesson learnt in the other aspect (the runtime side)
-
-#### 5.  Week 5
 
 ##### Manual vs Automatic Parsing
 
@@ -113,6 +101,9 @@ Branch → “if” C1 expr “then” C2 expr C3 “end” “if” C4
 
 - Sistemnya seperti interrupt di OS. Setiap C1, C2, ... akan trigger suatu action/kode yang menghandle verifikasi, symbol lookup, dst.
 
+
+
+Note: Go [here](https://github.com/funcml/funcml_runtime/blob/main/README.md) to see our lesson learnt in the other aspect (the runtime side)
 
 ### Contributing
 
