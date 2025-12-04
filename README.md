@@ -6,12 +6,6 @@
 
 **FunML (Functional Markup Language)** is an innovative markup language designed to bring the power and expressiveness of functional programming concepts to document authoring and data representation. FunML enables users to write concise, readable, and highly composable markup that can be transformed and processed with functional paradigms.
 
-### Milestone
-- [x] Parsing Components and Tags
-- [x] Parsing Attributes
-- [x] Parsing Props
-- [x] Parsing State
-
 ### Syntax Examples
 
 Here are some basic FunML syntax examples:
@@ -210,19 +204,3 @@ Branch → “if” C1 expr “then” C2 expr C3 “end” “if” C4
 ```
 
 - Sistemnya seperti interrupt di OS. Setiap C1, C2, ... akan trigger suatu action/kode yang menghandle verifikasi, symbol lookup, dst.
-
-
-
-Note: Go [here](https://github.com/funcml/funcml_runtime/blob/main/README.md) to see our lesson learnt in the other aspect (the runtime side)
-
-### Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
-### License
-
-FunML is released under the MIT License.
-
----
-For more information, visit the [project website](https://github.com/pemfung/funml) or join the discussion on our [community forum](https://community.funml.dev).
-
